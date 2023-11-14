@@ -1,0 +1,174 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <x86intrin.h>
+
+// Função para gerar números aleatórios únicos em um vetor
+void gerarVetorUnicoAleatorio(int *vetor, int tamanhoVetor) {
+    for (int i = 0; i < tamanhoVetor; i++) {
+        vetor[i] = i;
+    }
+    for (int i = tamanhoVetor - 1; i > 0; i--) {
+        int j = abs(rand() % (i + 1));
+        int temp = vetor[i];
+        vetor[i] = vetor[j];
+        vetor[j] = temp;
+    }
+}
+
+// Função de busca linear
+int buscaLinear(int *vetor, int tamanhoVetor, int chaveBusca) {
+    for (int i = 0; i < tamanhoVetor; i++) {
+        if (vetor[i] == chaveBusca) {
+            return i;
+        }
+    }
+    return -1;  // Elemento não encontrado
+}
+
+// Função de busca linear com sentinela
+int buscaLinearComSentinela(int *vetor, int tamanhoVetor, int chaveBusca) {
+    int ultimoElemento = vetor[tamanhoVetor] ;
+    vetor[tamanhoVetor-1] = chaveBusca; // Adiciona o chaveBusca como sentinela
+    int i = 0;
+    while (vetor[i] != chaveBusca) {
+        i++;
+    }
+    if ((i < tamanhoVetor - 1) || (vetor[tamanhoVetor - 1] == chaveBusca)) {
+        return i;  // Elemento encontrado
+    }
+    return -1;  // Elemento não encontrado
+}
+
+// função que realiza a troca entre dois elementos
+void troca(int vet[], int i, int j)
+{
+	int aux = vet[i];
+	vet[i] = vet[j];
+	vet[j] = aux;
+}
+
+// particiona e retorna o índice do pivô
+int particiona(int vet[], int inicio, int fim)
+{
+	int pivo, pivo_indice, i;
+	
+	pivo = vet[fim]; // o pivô é sempre o último elemento
+	pivo_indice = inicio;
+	
+	for(i = inicio; i < fim; i++)
+	{
+		// verifica se o elemento é <= ao pivô
+		if(vet[i] <= pivo)
+		{
+			// realiza a troca
+			troca(vet, i, pivo_indice);
+			// incrementa o pivo_indice
+			pivo_indice++;
+		}
+	}
+	
+	// troca o pivô
+	troca(vet, pivo_indice, fim);
+	
+	// retorna o índice do pivô
+	return pivo_indice;
+}
+
+// escolhe um pivô aleatório para evitar o pior caso do quickSort
+int particiona_random(int vet[], int inicio, int fim)
+{
+	// seleciona um número entre fim (inclusive) e inicio (inclusive)
+	int pivo_indice = (rand() % (fim - inicio + 1)) + inicio;
+	
+	// faz a troca para colocar o pivô no fim
+	troca(vet, pivo_indice, fim);
+	// chama a particiona
+	return particiona(vet, inicio, fim);
+}
+
+void quickSort(int vet[], int inicio, int fim)
+{
+	if(inicio < fim)
+	{
+		// função particionar retorna o índice do pivô
+		int pivo_indice = particiona_random(vet, inicio, fim);
+		
+		// chamadas recursivas quickSort
+		quickSort(vet, inicio, pivo_indice - 1);
+		quickSort(vet, pivo_indice + 1, fim);
+	}
+}
+
+// Função de busca binária
+int buscaBinaria(int *vetor, int tamanhoVetor, int chaveBusca) {
+    int esquerda = 0;
+    int direita = tamanhoVetor - 1;
+    while (esquerda <= direita) {
+        int meio = esquerda + (direita - esquerda) / 2;
+        if (vetor[meio] == chaveBusca) {
+            return meio;
+        }
+        if (vetor[meio] < chaveBusca) {
+            esquerda = meio + 1;
+        } else {
+            direita = meio - 1;
+        }
+    }
+    return -1;  // Elemento não encontrado
+}
+
+int main() {
+    const int tamanhos[] = {100000,1000000, 10000000,10000000};
+
+    printf("-----------------------------------------------------\n");
+    printf("       Comparação algoritmos de busca\n");
+    printf("-----------------------------------------------------\n");
+    for (int i = 0; i < sizeof(tamanhos) / sizeof(tamanhos[0]); i++) {
+        int tamanho = tamanhos[i];
+        int *vetor = (int *)malloc(tamanho * sizeof(int));
+        gerarVetorUnicoAleatorio(vetor, tamanho);
+
+        int chaveBusca = -1;  // Escolha um elemento aleatório como chaveBusca
+
+        clock_t inicio, fim;
+
+        // Medir o tempo para busca linear
+        inicio = clock();
+        int resultadoLinear = buscaLinear(vetor, tamanho, chaveBusca);
+        fim = clock();
+       // printf("%d \t %llu \t", tamanho, fim - inicio);
+        printf("Tempo de Busca Linear para n=%d: %llu ticks de clock - Tempo tomado: %f\n", tamanho, (long)(fim - inicio), (double)((fim - inicio) / CLOCKS_PER_SEC));
+
+
+        // Medir o tempo para busca linear com sentinela
+        inicio = clock();
+        int resultadoSentinela = buscaLinearComSentinela(vetor, tamanho, chaveBusca);
+        fim = clock();
+        //printf(" %llu \t", fim - inicio);
+        printf("Tempo de Busca Linear com Sentinela para n=%d: %llu ticks de clock - Tempo tomado: %f\n", tamanho, (long)(fim - inicio), (double)((fim - inicio) / CLOCKS_PER_SEC));
+
+
+        // Medir o tempo para busca binária
+        inicio = clock();
+        quickSort(vetor, 0, tamanhos[i]-1);
+        int resultadoBinaria = buscaBinaria(vetor, tamanho, chaveBusca);
+        fim = clock();
+        //printf(" %llu \t \n", fim - inicio);
+        printf("Tempo de Busca Binária Com ordenacao para n=%d: %llu ticks de clock - Tempo tomado: %f\n", tamanho, (long)(fim - inicio), (double)((fim - inicio) / CLOCKS_PER_SEC));
+        
+
+        // Medir o tempo para busca binária
+        inicio = clock();
+        resultadoBinaria = buscaBinaria(vetor, tamanho, chaveBusca);
+        fim = clock();
+        //printf(" %llu \t \n", fim - inicio);
+        printf("Tempo de Busca Binária Sem ordenacao para n=%d: %llu ticks de clock - Tempo tomado: %f\n", tamanho, (long)(fim - inicio), (double)((fim - inicio) / CLOCKS_PER_SEC));
+        printf("-----------------------------------------------------\n");
+
+        free(vetor);
+    }
+
+    system("PAUSE");
+    return 0;
+}
